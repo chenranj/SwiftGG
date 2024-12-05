@@ -1,440 +1,212 @@
 import SwiftUI
-import SafariServices
-import MessageUI
 
 struct MeView: View {
-    @Environment(\.presentationMode) var presentationMode
-    @Environment(\.colorScheme) var colorScheme
-    @Environment(\.dismiss) var dismiss
-    @AppStorage("groceryShoppingDay") private var groceryShoppingDay = 0
-    @AppStorage("skipBreakfast") private var skipBreakfast = false
-    @AppStorage("skipLunch") private var skipLunch = false
-    @AppStorage("skipDinner") private var skipDinner = false
-    @AppStorage("isDarkMode") private var isDarkMode = false
-    @State private var showingDayPicker = false
-    @State private var showingSafariView = false
-    @State private var currentURL: URL?
-    @State private var showingMailView = false
-    @State private var amberText = "Amber"
-    @State private var iconTapCount = 0
-    @State private var showingCookieRain = false
-    @State private var amberTapCount = 0
-    @State private var cookieRainTimer: Timer?
-    @State private var cookieRainView: CookieRainView?
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var service = ContributorsService.shared
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
     
-    let daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    // 社交媒体数据
+    let socialLinks = [
+        (icon: "github", name:"Github", url: "https://github.com/SwiftGGTeam", color: Color(red: 51/255, green: 51/255, blue: 51/255)),
+        (icon: "twitterx", name:"X（Twitter）", url: "https://twitter.com/SwiftGGTeam", color: Color(red: 0/255, green: 0/255, blue: 0/255)),
+        (icon: "weibo", name:"新浪微博", url: "https://weibo.com/swiftguide", color: Color(red: 230/255, green: 22/255, blue: 45/255)),
+        (icon: "xiaohongshu", name:"小红书", url: "https://www.xiaohongshu.com/user/profile/5e8c6c83000000000100104b", color: Color(red: 255/255, green: 72/255, blue: 92/255))
+    ]
     
-    var skippedMealsCount: Int {
-        [skipBreakfast, skipLunch, skipDinner].filter { $0 }.count
+    // 图标视图组件
+    struct IconView: View {
+        let systemName: String
+        let color: Color
+        
+        var body: some View {
+            Image(systemName: systemName)
+                .foregroundStyle(.white)
+                .imageScale(.medium)
+                .frame(width: 21, height: 21)
+                .padding(3)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(color.opacity(0.8))
+                )
+        }
+    }
+    
+    // 头像视图组件
+    struct AvatarView: View {
+        let avatar: String?
+        let size: CGFloat = 40
+        
+        var body: some View {
+            if let avatarURL = avatar, let url = URL(string: avatarURL) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        // 加载中状态
+                        defaultAvatar
+                            .overlay {
+                                ProgressView()
+                                    .scaleEffect(0.5)
+                            }
+                    case .success(let image):
+                        // 加载成功
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: size, height: size)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    case .failure(_):
+                        // 加载失败
+                        defaultAvatar
+                    @unknown default:
+                        defaultAvatar
+                    }
+                }
+            } else {
+                // 没有头像URL
+                defaultAvatar
+            }
+        }
+        
+        // 默认头像视图
+        private var defaultAvatar: some View {
+            Image(systemName: "person.slash")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .foregroundStyle(.gray)
+                .frame(width: size * 0.6, height: size * 0.6)
+                .frame(width: size, height: size)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+    }
+    
+    // 添加一个新的视图组件来统一行的显示
+    struct ContributorRow: View {
+        let contributor: Contributor
+        
+        var body: some View {
+            HStack(spacing: 15) {
+                AvatarView(avatar: contributor.avatar)
+                VStack(alignment: .leading) {
+                    Text(contributor.name)
+                    Text(contributor.role)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                // 如果有URL，显示外链图标
+                if contributor.url != nil {
+                    Image(systemName: "arrow.up.right")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .foregroundColor(.primary)
+        }
     }
     
     var body: some View {
         NavigationView {
             List {
-                appInfoSection
-                mealSettingsSection
-                generalSettingsSection
-                copyrightSection
-            }
-            .listStyle(InsetGroupedListStyle())
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
-                            .symbolRenderingMode(.hierarchical)
-                            .font(.system(size: 22))
+                // 关于我们和社交媒体
+                Section("关于SwiftGG") {
+                    // 官网链接
+                    Link(destination: URL(string: "https://swiftgg.org")!) {
+                        HStack(spacing: 15) {
+                            IconView(systemName: "globe", color: ThemeColors.iconColors.website)
+                            Text("SwiftGG 官网")
+                            Spacer()
+                        }
+                        .foregroundColor(.primary)
                     }
-                }
-            }
-        }
-        .background(Color(UIColor.systemGroupedBackground).edgesIgnoringSafeArea(.all))
-        .sheet(isPresented: $showingDayPicker) {
-            dayPickerView()
-        }
-        .sheet(isPresented: $showingSafariView) {
-            if let url = currentURL {
-                SafariView(url: url)
-            }
-        }
-        .sheet(isPresented: $showingMailView) {
-            if MailView.canSendMail {
-                MailView(subject: "InchMenu Support", recipient: "support@inchmenu.com")
-            }
-        }
-        .onAppear(perform: onAppear)
-        .overlay(
-            Group {
-                if showingCookieRain {
-                    CookieRainView()
-                        .edgesIgnoringSafeArea(.all)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                                showingCookieRain = false
+                    
+                    // 社交媒体链接
+                    ForEach(socialLinks, id: \.icon) { social in
+                        Link(destination: URL(string: social.url)!) {
+                            HStack(spacing: 15) {
+                                Image(social.icon)
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 21, height: 21)
+                                    .foregroundColor(.white)
+                                    .padding(3)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(social.color)
+                                    )
+                                Text(social.name)
+                                    .foregroundColor(.primary)
+                                Spacer()
                             }
                         }
+                    }
                 }
-            }
-        )
-        .environment(\.colorScheme, isDarkMode ? .dark : .light)
-        .onChange(of: isDarkMode) { oldValue, newValue in
-            setAppearance(isDark: newValue)
-        }
-    }
-    
-    private var appInfoSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 10) {
-                appHeaderView
-                Divider()
-                ForEach(appInfoItems.indices, id: \.self) { index in
-                    VStack {
-                        appInfoItemView(appInfoItems[index])
-                        if index < appInfoItems.count - 1 {
-                            Divider()
+                
+                // 版本信息
+                Section("应用信息") {
+                    HStack(spacing: 15) {
+                        IconView(systemName: "info.circle.fill", color: ThemeColors.iconColors.info)
+                        Text("当前版本")
+                        Spacer()
+                        Text(AppInfo.versionAndBuild)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                // 贡献者列表
+                Section("翻译组成员") {
+                    if !networkMonitor.isConnected {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 8) {
+                                Image(systemName: "wifi.slash")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.gray)
+                                Text("连接互联网查看成员信息")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.vertical, 20)
+                            Spacer()
+                        }
+                    } else if service.isLoading {
+                        HStack {
+                            Spacer()
+                            ProgressView("加载中...")
+                            Spacer()
+                        }
+                        .padding(.vertical, 20)
+                    } else if !service.contributors.isEmpty {
+                        ForEach(service.contributors) { contributor in
+                            if let url = contributor.url {
+                                Link(destination: URL(string: url)!) {
+                                    ContributorRow(contributor: contributor)
+                                }
+                            } else {
+                                ContributorRow(contributor: contributor)
+                            }
                         }
                     }
                 }
             }
-        }
-        .listRowBackground(sectionBackground)
-    }
-    
-    private var appHeaderView: some View {
-        HStack {
-            appIcon
-            appInfo
-            Spacer()
-        }
-        .padding(.vertical, 10)
-    }
-    
-    private func appInfoItemView(_ item: AppInfoItem) -> some View {
-        Button(action: { item.action() }) {
-            HStack {
-                Image(systemName: item.imageName)
-                    .foregroundColor(.white)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        LinearGradient(gradient: item.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-                    .cornerRadius(8)
-                Text(item.title)
-                    .foregroundColor(.primary)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.gray)
-                    .font(.footnote)
-            }
-        }
-    }
-    
-    private struct AppInfoItem {
-        let title: String
-        let imageName: String
-        let gradient: Gradient
-        let action: () -> Void
-    }
-    
-    private var appInfoItems: [AppInfoItem] {
-        [
-            AppInfoItem(title: "Homepage", imageName: "safari", gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]), action: openHomepage),
-            AppInfoItem(title: "Email Support", imageName: "envelope", gradient: Gradient(colors: [Color(red: 0.5, green: 0.8, blue: 0.5), Color(red: 0.4, green: 0.7, blue: 0.4)]), action: { showingMailView = true }),
-            AppInfoItem(title: "Write a Review", imageName: "star", gradient: Gradient(colors: [Color(red: 0.9, green: 0.7, blue: 0.4), Color(red: 0.8, green: 0.6, blue: 0.3)]), action: openReview),
-            AppInfoItem(title: "Privacy Policy", imageName: "hand.raised", gradient: Gradient(colors: [Color(red: 0.8, green: 0.5, blue: 0.8), Color(red: 0.7, green: 0.4, blue: 0.7)]), action: openPrivacyPolicy),
-            AppInfoItem(title: "Terms of Use", imageName: "doc.text", gradient: Gradient(colors: [Color(red: 0.6, green: 0.6, blue: 0.9), Color(red: 0.5, green: 0.5, blue: 0.8)]), action: openTermsOfUse)
-        ]
-    }
-    
-    private var appIcon: some View {
-        Group {
-            if let lightIconImage = UIImage(named: "aboutIcon"), 
-               let darkIconImage = UIImage(named: "aboutIcon-Dark") {
-                Image(uiImage: isDarkMode ? darkIconImage : lightIconImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
-                    .cornerRadius(12)
-                    .onTapGesture(perform: iconTapped)
-            } else {
-                Image(systemName: "app.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
-                    .foregroundColor(isDarkMode ? .white : .blue)
-                    .cornerRadius(12)
-                    .onTapGesture(perform: iconTapped)
-            }
-        }
-    }
-    
-    private var appInfo: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("CookMonster")
-                .font(.headline)
-            Text("Version 0.0.1")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-        }
-    }
-    
-    private var mealSettingsSection: some View {
-        Section(header: Text("Meal Settings")) {
-            settingRow(title: "Grocery day", imageName: "cart", gradient: Gradient(colors: [Color(red: 0.5, green: 0.8, blue: 0.5), Color(red: 0.4, green: 0.7, blue: 0.4)])) {
-                HStack {
-                    Spacer()
-                    Button(daysOfWeek[groceryShoppingDay]) {
-                        showingDayPicker = true
+            .navigationTitle("关于")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") {
+                        dismiss()
                     }
-                    .foregroundColor(.blue)
                 }
             }
-            
-            toggleRow(title: "Skip Breakfast", imageName: "sunrise", gradient: Gradient(colors: [Color(red: 0.9, green: 0.7, blue: 0.4), Color(red: 0.8, green: 0.6, blue: 0.3)]), isOn: $skipBreakfast)
-                .disabled(skippedMealsCount >= 2 && !skipBreakfast)
-            
-            toggleRow(title: "Skip Lunch", imageName: "sun.max", gradient: Gradient(colors: [Color(red: 0.7, green: 0.8, blue: 0.4), Color(red: 0.6, green: 0.7, blue: 0.3)]), isOn: $skipLunch)
-                .disabled(skippedMealsCount >= 2 && !skipLunch)
-            
-            toggleRow(title: "Skip Dinner", imageName: "moon", gradient: Gradient(colors: [Color(red: 0.5, green: 0.7, blue: 0.9), Color(red: 0.4, green: 0.6, blue: 0.8)]), isOn: $skipDinner)
-                .disabled(skippedMealsCount >= 2 && !skipDinner)
-        }
-        .listRowBackground(sectionBackground)
-    }
-    
-    private var generalSettingsSection: some View {
-        Section(header: Text("General Settings")) {
-            toggleRow(title: "Dark Mode", imageName: "moon.stars", gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]), isOn: $isDarkMode)
-        }
-        .listRowBackground(sectionBackground)
-    }
-    
-    private var copyrightSection: some View {
-        Section {
-            VStack(alignment: .center, spacing: 4) {
-                Text("Copyright © InchMenu.com")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                HStack(spacing: 0) {
-                    Text("Made with ♥️ in Boston for ")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                    Text(amberText)
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .onTapGesture {
-                            amberTapped()
-                        }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .listRowBackground(Color.clear)
-        }
-    }
-    
-    private func dayPickerView() -> some View {
-        VStack {
-            Picker("Grocery day", selection: $groceryShoppingDay) {
-                ForEach(0..<7) { index in
-                    Text(daysOfWeek[index]).tag(index)
-                }
-            }
-            .pickerStyle(WheelPickerStyle())
-            
-            Button("Done") {
-                showingDayPicker = false
-            }
-            .padding()
-        }
-        .presentationDetents([.height(250)])
-    }
-    
-    private func onAppear() {
-        isDarkMode = colorScheme == .dark
-    }
-    
-    private func setAppearance(isDark: Bool) {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            windowScene.windows.first?.overrideUserInterfaceStyle = isDark ? .dark : .light
-        }
-        
-        // 使用 AppStorage 来触发视图更新
-        isDarkMode = isDark
-    }
-    
-    private func iconTapped() {
-        iconTapCount += 1
-        
-        // 每次点击都震动
-        let impact = UIImpactFeedbackGenerator(style: .medium)
-        impact.impactOccurred()
-        
-        if iconTapCount == 10 {
-            showingCookieRain = true
-            iconTapCount = 0
-        }
-    }
-    
-    private func openHomepage() {
-        currentURL = URL(string: "https://inchmenu.com")
-        showingSafariView = true
-    }
-    
-    private func openReview() {
-        if let writeReviewURL = URL(string: "https://apps.apple.com/app/id<YOUR_APP_ID>?action=write-review") {
-            UIApplication.shared.open(writeReviewURL, options: [:], completionHandler: nil)
-        }
-    }
-    
-    private func openPrivacyPolicy() {
-        currentURL = URL(string: "https://inchmenu.com/privacy")
-        showingSafariView = true
-    }
-    
-    private func openTermsOfUse() {
-        currentURL = URL(string: "https://inchmenu.com/terms")
-        showingSafariView = true
-    }
-    
-    private func amberTapped() {
-        
-        let impact = UIImpactFeedbackGenerator(style: .medium)
-        impact.impactOccurred()
-        
-        amberText = "👧🏻"
-        openInstagram()
-    }
-    
-    private func openInstagram() {
-        if let instagramURL = URL(string: "instagram://user?username=_soberamber_") {
-            UIApplication.shared.open(instagramURL, options: [:], completionHandler: nil)
-        } else if let webInstagramURL = URL(string: "https://www.instagram.com/_soberamber_") {
-            UIApplication.shared.open(webInstagramURL, options: [:], completionHandler: nil)
-        }
-    }
-    
-    private func settingRow<Content: View>(title: String, imageName: String, gradient: Gradient, @ViewBuilder content: () -> Content) -> some View {
-        HStack {
-            Image(systemName: imageName)
-                .foregroundColor(.white)
-                .frame(width: 30, height: 30)
-                .background(
-                    LinearGradient(gradient: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .cornerRadius(8)
-            Text(title)
-            Spacer()
-            content()
-        }
-    }
-    
-    private func toggleRow(title: String, imageName: String, gradient: Gradient, isOn: Binding<Bool>) -> some View {
-        settingRow(title: title, imageName: imageName, gradient: gradient) {
-            Toggle("", isOn: isOn)
-        }
-    }
-    
-    // 添加这个计算属性来设置section背景色
-    private var sectionBackground: Color {
-        isDarkMode ? Color(UIColor.secondarySystemBackground) : Color.white
-    }
-}
-
-struct CookieRainView: View {
-    let cookieEmoji = "🍪"
-    let cookieCount = 30
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ForEach(0..<cookieCount, id: \.self) { index in
-                CookieView(cookieEmoji: cookieEmoji, size: geometry.size, delay: Double(index) * 0.1)
-            }
-        }
-    }
-}
-
-struct CookieView: View {
-    let cookieEmoji: String
-    let size: CGSize
-    let delay: Double
-    
-    @State private var yPosition: CGFloat
-    @State private var xPosition: CGFloat
-    @State private var opacity: Double = 0
-    
-    init(cookieEmoji: String, size: CGSize, delay: Double) {
-        self.cookieEmoji = cookieEmoji
-        self.size = size
-        self.delay = delay
-        
-        _yPosition = State(initialValue: -50)
-        _xPosition = State(initialValue: CGFloat.random(in: 0...size.width))
-    }
-    
-    var body: some View {
-        Text(cookieEmoji)
-            .font(.system(size: 30))
-            .position(x: xPosition, y: yPosition)
-            .opacity(opacity)
             .onAppear {
-                withAnimation(Animation.easeIn(duration: 0.5).delay(delay)) {
-                    self.opacity = 1
-                }
-                withAnimation(Animation.linear(duration: Double.random(in: 3...6)).delay(delay).repeatForever(autoreverses: false)) {
-                    yPosition = size.height + 50
+                if networkMonitor.isConnected {
+                    Task {
+                        await service.fetchContributors()
+                    }
                 }
             }
-    }
-}
-
-struct SafariView: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context: UIViewControllerRepresentableContext<SafariView>) -> SFSafariViewController {
-        return SFSafariViewController(url: url)
-    }
-
-    func updateUIViewController(_ uiViewController: SFSafariViewController, context: UIViewControllerRepresentableContext<SafariView>) {}
-}
-
-struct MailView: UIViewControllerRepresentable {
-    let subject: String
-    let recipient: String
-
-    func makeUIViewController(context: Context) -> MFMailComposeViewController {
-        let vc = MFMailComposeViewController()
-        vc.setSubject(subject)
-        vc.setToRecipients([recipient])
-        return vc
-    }
-
-    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
-
-    static var canSendMail: Bool {
-        MFMailComposeViewController.canSendMail()
-    }
-}
-
-// 添加这个扩展来获取应用程序图标
-extension UIApplication {
-    var icon: UIImage? {
-        guard let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
-              let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
-              let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
-              let lastIcon = iconFiles.last else {
-            return nil
         }
-        return UIImage(named: lastIcon)
-    }
-}
-
-extension View {
-    func colorInvert(_ shouldInvert: Bool) -> some View {
-        self.colorInvert().opacity(shouldInvert ? 1 : 0)
     }
 }
 
