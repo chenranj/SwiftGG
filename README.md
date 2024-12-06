@@ -1,12 +1,12 @@
 # SwiftGG iOS App
 
 <p align="center">
-<img src="path_to_app_icon" width="120"/>
+<img src="https://swiftgg.org/icon.png" width="120"/>
 </p>
 
 <p align="center">
-<a href="https://developer.apple.com/swift"><img src="https://img.shields.io/badge/Swift-5.0-orange.svg?style=flat" alt="Swift 5.0"></a>
-<a href="https://developer.apple.com/ios"><img src="https://img.shields.io/badge/iOS-15.0%2B-blue.svg" alt="iOS 15.0+"></a>
+<a href="https://developer.apple.com/swift"><img src="https://img.shields.io/badge/Swift-5.0-orange.svg?style=flat" alt="Swift 6.0"></a>
+<a href="https://developer.apple.com/ios"><img src="https://img.shields.io/badge/iOS-15.0%2B-blue.svg" alt="iOS 18.0+"></a>
 <a href="https://github.com/your_username/SwiftGG/blob/main/LICENSE"><img src="https://img.shields.io/github/license/your_username/SwiftGG" alt="License"></a>
 </p>
 
@@ -23,17 +23,15 @@ SwiftGG iOS客户端是一个优雅的Swift社区阅读应用,为Swift开发者�
 - 🔄 文章列表支持下拉刷新
 - 💬 评论功能(开发中)
 - 🔍 搜索功能(计划中)
-- 📱 支持iPhone/iPad自适应布局
-
-## 截图展示
+- 📱 支持iPhone自适应布局
 
 ![promotion image](https://swiftgg.org/ios.jpeg)
 
 ## 系统要求
 
-- iOS 15.0+
+- iOS 18.0+
 - Xcode 14.0+
-- Swift 5.0+
+- Swift 6.0+
 
 ## 安装说明
 
@@ -109,58 +107,23 @@ SwiftGG/
   - 可跟随系统自动切换
   - 支持手动切换主题
 
-- **iPad适配**
-  - 支持分屏多任务
-  - 自适应布局优化
-  - 大屏交互优化
-
 ## 上线前需调整的功能
 
 1. 性能优化
-- [ ] 优化文章加载速度
-- [ ] 添加预加载机制
-- [ ] 优化图片加载策略
-- [ ] 添加骨架屏加载状态
+- [ ] 文章阅读页滑动返回
+- [ ] PDF 购买链接
+- [ ] 社交媒体链接修正
 
-2. 用户体验
-- [ ] 完善错误提示机制
-- [ ] 添加加载进度指示
-- [ ] 优化页面切换动画
-- [ ] 添加手势导航支持
-
-3. 功能完善
-- [ ] 实现文章收藏功能
-- [ ] 添加阅读历史记录
-- [ ] 支持文章分享功能
-- [ ] 实现文章搜索功能
-
-4. 界面优化
-- [ ] 优化iPad布局
-- [ ] 完善深色模式适配
-- [ ] 优化代码块显示
-- [ ] 添加更多交互动效
 
 ## 未来计划 (TODO)
 
 ### 近期计划 (v1.1)
 - [ ] 评论系统
-  - 支持Markdown格式
-  - 评论点赞功能
-  - 回复提醒
 - [ ] 搜索功能
-  - 全文搜索
-  - 搜索历史记录
-  - 搜索建议
-- [ ] 个性化推荐
-  - 基于阅读历史
-  - 兴趣标签
-  - 智能推荐算法
+
 
 ### 中期计划 (v1.2)
 - [ ] 社区功能
-  - 用户登录注册
-  - 个人主页
-  - 关注机制
 - [ ] 内容创作
   - Markdown编辑器
   - 草稿箱
@@ -169,20 +132,6 @@ SwiftGG/
   - 学习计划
   - 进度记录
   - 学习统计
-
-### 长期计划 (v2.0)
-- [ ] 在线课程
-  - 视频课程
-  - 互动练习
-  - 学习认证
-- [ ] AI助手
-  - 代码补全
-  - 问答系统
-  - 智能纠错
-- [ ] 跨平台支持
-  - macOS版本
-  - iPad优化
-  - Apple Watch支持
 
 ## 贡献指南
 
@@ -196,17 +145,16 @@ SwiftGG/
 
 本项目基于 MIT 协议开源。详见 [LICENSE](LICENSE) 文件。
 
-## 联系方式
+## 作者联系方式
 
-- Email: your.email@example.com
-- Twitter: [@your_twitter](https://twitter.com/your_twitter)
-- Blog: [your_blog](https://your_blog.com)
+- Email: chenran@swiftgg.org
+- website: https://jin.cr
 
 ## 致谢
 
-- SwiftGG翻译组的所有成员
+- SwiftGG 翻译组的所有成员
 - 所有项目贡献者
-- 支持这个项目的赞助商
+- 支持 SwiftGG 的赞助商
 
 ## 更新日志
 
@@ -214,4 +162,3 @@ SwiftGG/
 - 初始版本发布
 - 实现基础文章阅读功能
 - 支持深色模式
-- 支持iPad适配
