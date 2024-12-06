@@ -3,11 +3,9 @@ import AVFoundation
 
 struct ArticleDetailView: View {
     let post: Post
+    @StateObject private var preferences = ReadingPreferences.shared
     @State private var showingToast = false
     @State private var showingSettings = false
-    @State private var fontSize: CGFloat = 16
-    @State private var isDarkMode = false
-    @State private var isFollowingSystem = true
     @Environment(\.colorScheme) var systemColorScheme
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
@@ -22,33 +20,16 @@ struct ArticleDetailView: View {
                         <style>
                             body {
                                 font-family: -apple-system, system-ui;
-                                font-size: \(fontSize)px;
+                                font-size: \(preferences.fontSize)px;
                                 line-height: 1.6;
                                 padding: 0;
                                 margin: 0 0 120px 0;
-                                color: \(isDarkMode ? "#FFFFFF" : "#000000");
-                                background-color: \(isDarkMode ? "#000000" : "#FFFFFF");
+                                color: \(preferences.isDarkMode ? "#FFFFFF" : "#000000");
+                                background-color: \(preferences.isDarkMode ? "#000000" : "#FFFFFF");
                             }
                             a {
                                 color: rgb(238, 120, 97);
                                 text-decoration: none;
-                                position: relative;
-                                padding-right: 15px;
-                            }
-                            a::after {
-                                content: '';
-                                display: inline-block;
-                                width: 10px;
-                                height: 10px;
-                                position: absolute;
-                                right: 0;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                background-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'><path fill='rgb(238, 120, 97)' d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/></svg>");
-                                background-repeat: no-repeat;
-                                background-position: center;
-                                background-size: contain;
-                                margin-left: 5px;
                             }
                             a:hover {
                                 opacity: 0.8;
@@ -81,7 +62,7 @@ struct ArticleDetailView: View {
                                 margin: 16px 0;
                             }
                             pre {
-                                background-color: \(isDarkMode ? "#1A1A1A" : "#F5F5F5");
+                                background-color: \(preferences.isDarkMode ? "#1A1A1A" : "#F5F5F5");
                                 padding: 16px;
                                 border-radius: 8px;
                                 overflow-x: auto;
@@ -145,7 +126,7 @@ struct ArticleDetailView: View {
                     Button {
                         shareArticle()
                     } label: {
-                        ToolbarButton(icon: "square.and.arrow.up", text: "分享", isDarkMode: isDarkMode)
+                        ToolbarButton(icon: "square.and.arrow.up", text: "分享", isDarkMode: preferences.isDarkMode)
                     }
                 }
             }
@@ -156,6 +137,14 @@ struct ArticleDetailView: View {
             if horizontalSizeClass == .compact {
                 VStack(spacing: 0) {
                     if showingSettings {
+                        Color.black.opacity(0.001)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation(.spring()) {
+                                    showingSettings = false
+                                }
+                            }
+                        
                         VStack(spacing: 16) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("字体大小")
@@ -165,7 +154,7 @@ struct ArticleDetailView: View {
                                 HStack {
                                     Image(systemName: "textformat.size.smaller")
                                         .foregroundColor(.gray)
-                                    Slider(value: $fontSize, in: 12...24, step: 1)
+                                    Slider(value: $preferences.fontSize, in: 12...24, step: 1)
                                     Image(systemName: "textformat.size.larger")
                                         .foregroundColor(.gray)
                                 }
@@ -180,8 +169,8 @@ struct ArticleDetailView: View {
                                 
                                 HStack(spacing: 12) {
                                     Button {
-                                        isFollowingSystem = true
-                                        isDarkMode = systemColorScheme == .dark
+                                        preferences.isFollowingSystem = true
+                                        preferences.isDarkMode = systemColorScheme == .dark
                                     } label: {
                                         HStack {
                                             Image(systemName: "circle.lefthalf.filled")
@@ -189,14 +178,14 @@ struct ArticleDetailView: View {
                                         }
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
-                                        .background(isFollowingSystem ? Color.accentColor : Color.gray.opacity(0.2))
-                                        .foregroundColor(isFollowingSystem ? .white : .primary)
+                                        .background(preferences.isFollowingSystem ? Color.accentColor : Color.gray.opacity(0.2))
+                                        .foregroundColor(preferences.isFollowingSystem ? .white : .primary)
                                         .clipShape(Capsule())
                                     }
                                     
                                     Button {
-                                        isFollowingSystem = false
-                                        isDarkMode = false
+                                        preferences.isFollowingSystem = false
+                                        preferences.isDarkMode = false
                                     } label: {
                                         HStack {
                                             Image(systemName: "sun.max.fill")
@@ -204,14 +193,14 @@ struct ArticleDetailView: View {
                                         }
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
-                                        .background(!isFollowingSystem && !isDarkMode ? Color.accentColor : Color.gray.opacity(0.2))
-                                        .foregroundColor(!isFollowingSystem && !isDarkMode ? .white : .primary)
+                                        .background(!preferences.isFollowingSystem && !preferences.isDarkMode ? Color.accentColor : Color.gray.opacity(0.2))
+                                        .foregroundColor(!preferences.isFollowingSystem && !preferences.isDarkMode ? .white : .primary)
                                         .clipShape(Capsule())
                                     }
                                     
                                     Button {
-                                        isFollowingSystem = false
-                                        isDarkMode = true
+                                        preferences.isFollowingSystem = false
+                                        preferences.isDarkMode = true
                                     } label: {
                                         HStack {
                                             Image(systemName: "moon.fill")
@@ -219,8 +208,8 @@ struct ArticleDetailView: View {
                                         }
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
-                                        .background(!isFollowingSystem && isDarkMode ? Color.accentColor : Color.gray.opacity(0.2))
-                                        .foregroundColor(!isFollowingSystem && isDarkMode ? .white : .primary)
+                                        .background(!preferences.isFollowingSystem && preferences.isDarkMode ? Color.accentColor : Color.gray.opacity(0.2))
+                                        .foregroundColor(!preferences.isFollowingSystem && preferences.isDarkMode ? .white : .primary)
                                         .clipShape(Capsule())
                                     }
                                 }
@@ -231,7 +220,6 @@ struct ArticleDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding()
                         .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .onTapGesture { }
                     }
                     
                     HStack {
@@ -240,7 +228,7 @@ struct ArticleDetailView: View {
                             Button {
                                 shareArticle()
                             } label: {
-                                ToolbarButton(icon: "square.and.arrow.up", text: "分享", isDarkMode: isDarkMode)
+                                ToolbarButton(icon: "square.and.arrow.up", text: "分享", isDarkMode: preferences.isDarkMode)
                             }
                             
                             Button {
@@ -248,7 +236,7 @@ struct ArticleDetailView: View {
                                     showingToast = true
                                 }
                             } label: {
-                                ToolbarButton(icon: "bubble.right", text: "评论", isDarkMode: isDarkMode)
+                                ToolbarButton(icon: "bubble.right", text: "评论", isDarkMode: preferences.isDarkMode)
                             }
                             
                             Button {
@@ -259,7 +247,7 @@ struct ArticleDetailView: View {
                                 ToolbarButton(
                                     icon: "slider.horizontal.3",
                                     text: "设置",
-                                    isDarkMode: isDarkMode
+                                    isDarkMode: preferences.isDarkMode
                                 )
                             }
                         }
@@ -280,12 +268,13 @@ struct ArticleDetailView: View {
         .ignoresSafeArea(edges: .bottom)
         .toast(isPresented: $showingToast, message: "评论功能即将推出")
         .onAppear {
-            isFollowingSystem = true
-            isDarkMode = systemColorScheme == .dark
+            if preferences.isFollowingSystem {
+                preferences.isDarkMode = systemColorScheme == .dark
+            }
         }
         .onChange(of: systemColorScheme) { _, newValue in
-            if isFollowingSystem {
-                isDarkMode = newValue == .dark
+            if preferences.isFollowingSystem {
+                preferences.isDarkMode = newValue == .dark
             }
         }
     }

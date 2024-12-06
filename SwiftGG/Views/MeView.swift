@@ -109,7 +109,7 @@ struct MeView: View {
         NavigationView {
             List {
                 // 关于我们和社交媒体
-                Section("关于SwiftGG") {
+                Section(content: {
                     // 官网链接
                     Link(destination: URL(string: "https://swiftgg.org")!) {
                         HStack(spacing: 15) {
@@ -141,7 +141,17 @@ struct MeView: View {
                             }
                         }
                     }
-                }
+                }, header: {
+                    Text("关于SwiftGG")
+                }, footer: {
+                    HStack {
+                        Spacer()
+                        Text("粤ICP备2023104442号-2")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                })
                 
                 // 版本信息
                 Section("应用信息") {
