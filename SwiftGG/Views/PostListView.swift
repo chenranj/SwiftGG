@@ -33,7 +33,6 @@ struct PostListView: View {
                                     ArticleDetailView(post: post)
                                         .onAppear { hideTabBar = true }
                                         .onDisappear { hideTabBar = false }
-                                        .navigationBarTitleDisplayMode(.inline)
                                 } label: {
                                     PostView(post: post)
                                 }

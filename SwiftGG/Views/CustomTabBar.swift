@@ -52,8 +52,7 @@ struct TabButtons: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(6)
         .frame(height: 44)
         .background(.ultraThinMaterial)
         .clipShape(Capsule())
