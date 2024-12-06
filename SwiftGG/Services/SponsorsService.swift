@@ -41,37 +41,70 @@ class SponsorsService: ObservableObject {
     
     init() {
         let config = URLSessionConfiguration.default
-        config.requestCachePolicy = .returnCacheDataElseLoad
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.timeoutIntervalForRequest = 10
         session = URLSession(configuration: config)
     }
     
     @MainActor
     func fetchSponsors() async {
-        // 如果已经加载过且有数据，直接返回
-        guard !hasInitialLoad || sponsors.isEmpty else { return }
-        guard !isLoading else { return }
+        guard !hasInitialLoad || sponsors.isEmpty else { 
+            print("Skipping fetch due to hasInitialLoad: \(hasInitialLoad), sponsors count: \(sponsors.count)")
+            return 
+        }
+        guard !isLoading else { 
+            print("Skipping fetch due to isLoading")
+            return 
+        }
         
         isLoading = true
         error = nil
         
         do {
-            let (data, _) = try await session.data(from: sponsorsURL)
-            let response = try JSONDecoder().decode(SponsorsResponse.self, from: data)
-            sponsors = response.sponsors
+            print("Fetching sponsors from: \(sponsorsURL)")
+            let (data, httpResponse) = try await session.data(from: sponsorsURL)
+            
+            if let httpResponse = httpResponse as? HTTPURLResponse {
+                print("Sponsors API Response Status: \(httpResponse.statusCode)")
+                print("Response Headers: \(httpResponse.allHeaderFields)")
+            }
+            
+            let jsonString = String(data: data, encoding: .utf8) ?? "Unable to decode"
+            print("Raw Response Data: \(jsonString)")
+            
+            let decodedResponse = try JSONDecoder().decode(SponsorsResponse.self, from: data)
+            print("Successfully decoded response with \(decodedResponse.sponsors.count) sponsors")
+            
+            for sponsor in decodedResponse.sponsors {
+                print("""
+                    Sponsor Details:
+                    - ID: \(sponsor.id)
+                    - Name: \(sponsor.name)
+                    - Level: \(sponsor.level.rawValue)
+                    - Image URL: \(sponsor.imageURL)
+                    - Website URL: \(sponsor.websiteURL)
+                    """)
+            }
+            
+            sponsors = decodedResponse.sponsors
             hasInitialLoad = true
+            print("Updated sponsors array with \(sponsors.count) items")
+            
         } catch {
             self.error = error
-            print("Error fetching sponsors: \(error)")
+            print("Error fetching sponsors: \(error.localizedDescription)")
+            if let decodingError = error as? DecodingError {
+                print("Decoding Error Details: \(decodingError)")
+            }
         }
         
         isLoading = false
     }
     
-    // 强制刷新方法
     @MainActor
     func forceRefresh() async {
         hasInitialLoad = false
+        URLCache.shared.removeAllCachedResponses()
         await fetchSponsors()
     }
 } 

@@ -214,7 +214,7 @@ struct ArticleDetailView: View {
                                 ToolbarButton(icon: "square.and.arrow.up", text: "分享")
                             }
                             
-                            // 评论按钮
+                            // 评论按���
                             Button {
                                 withAnimation {
                                     showingToast = true
@@ -260,7 +260,7 @@ struct ArticleDetailView: View {
             isFollowingSystem = true
             isDarkMode = systemColorScheme == .dark
         }
-        .onChange(of: systemColorScheme) { newValue in
+        .onChange(of: systemColorScheme) { _, newValue in
             if isFollowingSystem {
                 isDarkMode = newValue == .dark
             }

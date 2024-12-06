@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var sponsorsService = SponsorsService.shared
+    @StateObject private var contributorsService = ContributorsService.shared
     @State private var selectedTab = 0
     @State private var showingSettings = false
     @State private var hideTabBar = false
@@ -32,18 +34,42 @@ struct ContentView: View {
                 }
             }
             .edgesIgnoringSafeArea(.bottom)
-            .sheet(isPresented: $showingSettings, content: {
+            .sheet(isPresented: $showingSettings) {
                 if horizontalSizeClass == .compact {
-                    // 在 iPhone 上使用全屏 sheet
                     MeView()
                 } else {
-                    // 在 iPad/Mac 上使用弹窗样式
                     MeView()
                         .frame(width: 400)
                         .presentationDetents([.height(600)])
                 }
-            })
+            }
+            .onAppear {
+                Task {
+                    await loadData()
+                }
+            }
+            .onChange(of: selectedTab) { _, newValue in
+                if newValue == 2 {
+                    Task {
+                        await sponsorsService.fetchSponsors()
+                    }
+                }
+            }
         }
-        .navigationViewStyle(StackNavigationViewStyle())  // 使用堆栈导航样式
+        .navigationViewStyle(StackNavigationViewStyle())
+    }
+    
+    private func loadData() async {
+        // 并行加载所有初始数据
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await sponsorsService.fetchSponsors() }
+            group.addTask { await contributorsService.fetchContributors() }
+        }
     }
 }
+
+#Preview {
+    ContentView()
+        .environmentObject(NetworkMonitor.shared)
+}
+

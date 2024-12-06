@@ -22,7 +22,7 @@ struct TabButtons: View {
     @Binding var selectedTab: Int
     
     private let tabs = [
-        (icon: "newspaper.fill" , label: "新闻"),
+        (icon: "newspaper.fill", label: "新闻"),
         (icon: "swift", label: "文档"),
         (icon: "hands.clap", label: "伙伴")
     ]
