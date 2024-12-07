@@ -7,7 +7,7 @@
 <p align="center">
 <a href="https://developer.apple.com/swift"><img src="https://img.shields.io/badge/Swift-5.0-orange.svg?style=flat" alt="Swift 6.0"></a>
 <a href="https://developer.apple.com/ios"><img src="https://img.shields.io/badge/iOS-15.0%2B-blue.svg" alt="iOS 18.0+"></a>
-<a href="https://github.com/your_username/SwiftGG/blob/main/LICENSE"><img src="https://img.shields.io/github/license/your_username/SwiftGG" alt="License"></a>
+<a href="https://github.com/chenranj/SwiftGG/blob/main/LICENSE"><img src="https://img.shields.io/github/license/chenranj/SwiftGG" alt="License"></a>
 </p>
 
 SwiftGG iOS客户端是一个优雅的Swift社区阅读应用,为Swift开发者提供高质量的Swift相关文章阅读体验。
